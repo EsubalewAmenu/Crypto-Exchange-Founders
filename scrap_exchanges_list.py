@@ -2,6 +2,7 @@ import requests
 
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from bs4 import BeautifulSoup
 import os
 import csv
 from shared import open_browser, load_page, close_driver
@@ -20,7 +21,7 @@ def click_show_more(driver, show_more_selector):
             show_more_button.click()
             
             # Wait for AJAX content to load (you may need to adjust this wait time based on your application)
-            time.sleep(20)  # Adjust as needed
+            time.sleep(2)  # Adjust as needed
             
             # You can add more specific checks here based on your application
             # For example, check if new content has loaded or if the button disappears
@@ -34,12 +35,18 @@ def click_show_more(driver, show_more_selector):
     except TimeoutException:
         print("Timeout waiting for Show More button.")
 
-
+def scraped_exchanges_urls(soup):
+    links = []
+    for a_tag in soup.find_all('a', href=True):
+        if a_tag['href'].startswith('/exchanges/'):
+            links.append(a_tag['href'])
+    return links
+    
 driver = open_browser()
 
 exchanges_url = "https://coinmarketcap.com/rankings/exchanges/"
 soup = load_page(driver, exchanges_url, 'button.sc-7d96a92a-0.hOXHRi')
 click_show_more(driver, 'button.sc-7d96a92a-0.hOXHRi')
-scraped_exchanges_urls_data = scraped_exchanges_urls(soup)
+soup = BeautifulSoup(driver.page_source, "html.parser")
 
-close_driver(driver)
+scraped_exchanges_urls_data = scraped_exchanges_urls(soup)
