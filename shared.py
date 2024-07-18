@@ -20,7 +20,7 @@ def load_page(driver, menu_url, wait_until):
 
     driver.get(menu_url)
     
-        # Wait until the element with tag 'h3' and class 'text-center' is loaded
+    # Wait until the element with tag 'h3' and class 'text-center' is loaded
     try:
         element_present = EC.presence_of_element_located((By.CSS_SELECTOR, wait_until))
         WebDriverWait(driver, 20).until(element_present)
