@@ -6,6 +6,50 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from shared import open_browser, load_page, close_driver
 
+def scraped_company_data(soup, slug):
+        
+    try:
+        name = soup.find('h1', class_='sc-aba8b85a-0 sc-d36bb8b9-3 SZLGM lpefGs').text.strip()
+    except AttributeError:
+        name = None
+
+    try:
+        first_a_tag = soup.find('ul', class_='cmc-details-panel-links').find('a')
+
+        # Extract the URL
+        website_url = first_a_tag['href'] if first_a_tag else None
+    except AttributeError:
+        website_url = None
+
+    try:
+        twitter_url = soup.find('a', href=lambda href: href and "twitter.com" in href).get('href')
+    except AttributeError:
+        twitter_url = None
+
+    try:
+
+        # Find the <h2> tag with the specific id
+        founders_h2 = soup.find('h2', id=f"who-are-the-{slug}-founders")
+
+        # Find all <p> tags after the <h2> and before the next <h2>
+        founders_content = []
+        for sibling in founders_h2.find_next_siblings():
+            if sibling.name == 'h2':
+                break
+            if sibling.name == 'p':
+                founders_content.append(sibling.get_text())
+
+        # Join the content of all <p> tags
+        founders_text = '\n'.join(founders_content)
+    except AttributeError:
+        founders_text = None
+
+    return {
+        'name': name,
+        'website': website_url,
+        'twitter': twitter_url,
+        'founders': founders_text,
+    }
     
 def read_and_process_csv(filename='results.csv'):
     with open(filename, mode='r', newline='', encoding='utf-8') as file:
@@ -34,6 +78,7 @@ def read_and_process_csv(filename='results.csv'):
 
             # Call the scraping function
             soup = load_page(driver, link, wait_until)
+            full_scraped_data = scraped_company_data(soup, row[0])
 
             # Update the row with the scraped data
             row[1] = full_scraped_data.get('name', '')
