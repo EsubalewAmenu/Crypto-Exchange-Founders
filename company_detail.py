@@ -64,6 +64,19 @@ def scraped_company_data(soup):
         'founders': founders_text,
     }
     
+def custom_slugify(value):
+    # Normalize the string to remove accents and special characters
+    value = unicodedata.normalize('NFKC', value)
+    # Convert to lowercase
+    value = value.lower()
+    # Replace periods with nothing
+    value = value.replace('.', '')
+    # Replace spaces and special characters with hyphens
+    value = re.sub(r'[^\w\s-]', '', value)
+    # Replace spaces and multiple hyphens with a single hyphen
+    value = re.sub(r'[-\s]+', '-', value).strip('-')
+    return value
+
 def read_and_process_csv(filename='results.csv'):
     with open(filename, mode='r', newline='', encoding='utf-8') as file:
         reader = csv.reader(file)
