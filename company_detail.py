@@ -5,8 +5,11 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from shared import open_browser, load_page, close_driver
+import re
+import unicodedata
 
-def scraped_company_data(soup, slug):
+
+def scraped_company_data(soup):
         
     try:
         name = soup.find('h1', class_='sc-aba8b85a-0 sc-d36bb8b9-3 SZLGM lpefGs').text.strip()
@@ -28,19 +31,29 @@ def scraped_company_data(soup, slug):
 
     try:
 
-        # Find the <h2> tag with the specific id
-        founders_h2 = soup.find('h2', id=f"who-are-the-{slug}-founders")
+        possible_ids = [
+                f"who-are-the-{custom_slugify(name)}-founders",
+                f"who-are-the-founders-of-{custom_slugify(name)}"
+            ]
 
-        # Find all <p> tags after the <h2> and before the next <h2>
-        founders_content = []
-        for sibling in founders_h2.find_next_siblings():
-            if sibling.name == 'h2':
+        
+        # Find the target <h2> element with any of the possible ids
+        founders_h2 = next((soup.find('h2', id=element_id) for element_id in possible_ids if soup.find('h2', id=element_id)), None)
+
+        # Find the next <h2> after the target <h2>
+        next_h2 = founders_h2.find_next_sibling('h2')
+        
+        # Get all siblings of the target <h2>
+        siblings = founders_h2.find_next_siblings()
+        
+        # Collect <p> tags between the target <h2> and the next <h2>
+        founders_text = []
+        for sibling in siblings:
+            if sibling == next_h2:
                 break
             if sibling.name == 'p':
-                founders_content.append(sibling.get_text())
-
-        # Join the content of all <p> tags
-        founders_text = '\n'.join(founders_content)
+                founders_text.append(sibling.text)
+        founders_text = '\n'.join(founders_text)
     except AttributeError:
         founders_text = None
 
@@ -73,12 +86,9 @@ def read_and_process_csv(filename='results.csv'):
         # Check if the name column is empty
         if not name:
 
-            # Define the CSS selector for the h2 element by id
-            wait_until = f"h2#who-are-the-{row[0]}-founders"
-
             # Call the scraping function
-            soup = load_page(driver, link, wait_until)
-            full_scraped_data = scraped_company_data(soup, row[0])
+            soup = load_page(driver, link, "h1.sc-aba8b85a-0.sc-d36bb8b9-3.SZLGM.lpefGs")
+            full_scraped_data = scraped_company_data(soup)
 
             # Update the row with the scraped data
             row[1] = full_scraped_data.get('name', '')
