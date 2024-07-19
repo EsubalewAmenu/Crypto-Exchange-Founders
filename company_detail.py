@@ -25,8 +25,12 @@ def scraped_company_data(soup):
         website_url = None
 
     try:
-        twitter_url = soup.find('a', href=lambda href: href and "twitter.com" in href).get('href')
-    except AttributeError:
+        # Find the <ul> element with the specific class
+        ul_element = soup.find('ul', class_='cmc-details-panel-links')
+        
+        # Find the <a> tag within that <ul> that contains "twitter.com" in its href
+        twitter_url = ul_element.find('a', href=lambda href: href and "twitter.com" in href).get('href')
+    except (AttributeError, TypeError):
         twitter_url = None
 
     try:
